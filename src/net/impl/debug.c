@@ -153,8 +153,6 @@ bool _net_connect_debug_server(void) {
     tcp_err(_net_debug_client_pcb, _net_err_cb);
     tcp_arg(_net_debug_client_pcb, NULL);
 
-    _net_debug_client_pcb->so_options |= SOF_KEEPALIVE;
-
     return tcp_connect(_net_debug_client_pcb, &server_ip, CONF_DEBUG_SERVER_PORT, _net_debug_connected_cb) == ERR_OK;
 }
 

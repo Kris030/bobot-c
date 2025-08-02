@@ -81,76 +81,73 @@ void debug_printf(const char* format, ...);
 void debug_add_remote_var_fn(volatile void* ptr, const char* name, debug_type type);
 
 // for ints and floats a min and a max value are needed
-#define debug_add_remote_var(var, ...)                                                                  \
-    do {                                                                                                \
-        static_assert(                                                                                  \
-            sizeof(#var) - 1 < _DEBUG_VAR_MAX_NAME,                                                     \
-            "Debug variable name longer than maximum (" _UTIL_EXPAND_AND_QUOTE(_DEBUG_VAR_MAX_NAME) ")" \
-        );                                                                                              \
-        static_assert(                                                                                  \
-            !(_PP_NARG(0 __VA_OPT__(, __VA_ARGS__)) < _DEBUG_EXP_ARGS(var)),                            \
-            "debug_add_remote_var expects min and max values for ints and "                             \
-            "floats"                                                                                    \
-        );                                                                                              \
-        static_assert(                                                                                  \
-            !(_PP_NARG(0 __VA_OPT__(, __VA_ARGS__)) > _DEBUG_EXP_ARGS(var)),                            \
-            "too many args for debug_add_remote_var, only the variable and "                            \
-            "min, max are needed "                                                                      \
-            "(if int or float)"                                                                         \
-        );                                                                                              \
-                                                                                                        \
-        debug_add_remote_var_fn(                                                                        \
-            (volatile void*) &var, #var,                                                                \
-            _Generic(                                                                                   \
-                (var),                                                                                  \
-                uint8_t: (debug_type) { .ty = DEBUG_INT,                                                \
-                                        __VA_OPT__(                                                     \
-                                                .int_data = { .ty = DEBUG_U8,                           \
-                                                              .min = (uint8_t) (_ARG0(__VA_ARGS__)),    \
-                                                              .max = (uint8_t) (_ARG1(__VA_ARGS__)) }   \
-                                        ) },                                                            \
-                uint16_t: (debug_type) { .ty = DEBUG_INT,                                               \
-                                         __VA_OPT__(                                                    \
-                                                 .int_data = { .ty = DEBUG_U16,                         \
-                                                               .min = (uint16_t) (_ARG0(__VA_ARGS__)),  \
-                                                               .max = (uint16_t) (_ARG1(__VA_ARGS__)) } \
-                                         ) },                                                           \
-                uint32_t: (debug_type) { .ty = DEBUG_INT,                                               \
-                                         __VA_OPT__(                                                    \
-                                                 .int_data = { .ty = DEBUG_U32,                         \
-                                                               .min = (uint32_t) (_ARG0(__VA_ARGS__)),  \
-                                                               .max = (uint32_t) (_ARG1(__VA_ARGS__)) } \
-                                         ) },                                                           \
-                                                                                                        \
-                int8_t: (debug_type) { .ty = DEBUG_INT,                                                 \
-                                       __VA_OPT__(                                                      \
-                                               .int_data = { .ty = DEBUG_I8,                            \
-                                                             .min = (int8_t) (_ARG0(__VA_ARGS__)),      \
-                                                             .max = (int8_t) (_ARG1(__VA_ARGS__)) }     \
-                                       ) },                                                             \
-                int16_t: (debug_type) { .ty = DEBUG_INT,                                                \
-                                        __VA_OPT__(                                                     \
-                                                .int_data = { .ty = DEBUG_I16,                          \
-                                                              .min = (int16_t) (_ARG0(__VA_ARGS__)),    \
-                                                              .max = (int16_t) (_ARG1(__VA_ARGS__)) }   \
-                                        ) },                                                            \
-                int32_t: (debug_type) { .ty = DEBUG_INT,                                                \
-                                        __VA_OPT__(                                                     \
-                                                .int_data = { .ty = DEBUG_I32,                          \
-                                                              .min = (int32_t) (_ARG0(__VA_ARGS__)),    \
-                                                              .max = (int32_t) (_ARG1(__VA_ARGS__)) }   \
-                                        ) },                                                            \
-                                                                                                        \
-                float: (debug_type) { .ty = DEBUG_FLOAT,                                                \
-                                      __VA_OPT__(                                                       \
-                                              .float_range = { .min = (float) (_ARG0(__VA_ARGS__)),     \
-                                                               .max = (float) (_ARG1(__VA_ARGS__)) }    \
-                                      ) },                                                              \
-                                                                                                        \
-                bool: (debug_type) { .ty = DEBUG_BOOL },                                                \
-                hsv_color: (debug_type) { .ty = DEBUG_COLOR }                                           \
-            )                                                                                           \
-        );                                                                                              \
+#define debug_add_remote_var(var, ...)                                                                            \
+    do {                                                                                                          \
+        static_assert(                                                                                            \
+            sizeof(#var) - 1 < _DEBUG_VAR_MAX_NAME,                                                               \
+            "Debug variable name longer than maximum (" _UTIL_EXPAND_AND_QUOTE(_DEBUG_VAR_MAX_NAME) ")"           \
+        );                                                                                                        \
+        static_assert(                                                                                            \
+            !(_PP_NARG(0 __VA_OPT__(, __VA_ARGS__)) < _DEBUG_EXP_ARGS(var)),                                      \
+            "debug_add_remote_var expects min and max values for ints and floats"                                 \
+        );                                                                                                        \
+        static_assert(                                                                                            \
+            !(_PP_NARG(0 __VA_OPT__(, __VA_ARGS__)) > _DEBUG_EXP_ARGS(var)),                                      \
+            "too many args for debug_add_remote_var, only the variable and min, max are needed (if int or float)" \
+        );                                                                                                        \
+                                                                                                                  \
+        debug_add_remote_var_fn(                                                                                  \
+            (volatile void*) &var, #var,                                                                          \
+            _Generic(                                                                                             \
+                (var),                                                                                            \
+                uint8_t: (debug_type) { .ty = DEBUG_INT,                                                          \
+                                        __VA_OPT__(                                                               \
+                                                .int_data = { .ty = DEBUG_U8,                                     \
+                                                              .min = (uint8_t) (_ARG0(__VA_ARGS__)),              \
+                                                              .max = (uint8_t) (_ARG1(__VA_ARGS__)) }             \
+                                        ) },                                                                      \
+                uint16_t: (debug_type) { .ty = DEBUG_INT,                                                         \
+                                         __VA_OPT__(                                                              \
+                                                 .int_data = { .ty = DEBUG_U16,                                   \
+                                                               .min = (uint16_t) (_ARG0(__VA_ARGS__)),            \
+                                                               .max = (uint16_t) (_ARG1(__VA_ARGS__)) }           \
+                                         ) },                                                                     \
+                uint32_t: (debug_type) { .ty = DEBUG_INT,                                                         \
+                                         __VA_OPT__(                                                              \
+                                                 .int_data = { .ty = DEBUG_U32,                                   \
+                                                               .min = (uint32_t) (_ARG0(__VA_ARGS__)),            \
+                                                               .max = (uint32_t) (_ARG1(__VA_ARGS__)) }           \
+                                         ) },                                                                     \
+                                                                                                                  \
+                int8_t: (debug_type) { .ty = DEBUG_INT,                                                           \
+                                       __VA_OPT__(                                                                \
+                                               .int_data = { .ty = DEBUG_I8,                                      \
+                                                             .min = (int8_t) (_ARG0(__VA_ARGS__)),                \
+                                                             .max = (int8_t) (_ARG1(__VA_ARGS__)) }               \
+                                       ) },                                                                       \
+                int16_t: (debug_type) { .ty = DEBUG_INT,                                                          \
+                                        __VA_OPT__(                                                               \
+                                                .int_data = { .ty = DEBUG_I16,                                    \
+                                                              .min = (int16_t) (_ARG0(__VA_ARGS__)),              \
+                                                              .max = (int16_t) (_ARG1(__VA_ARGS__)) }             \
+                                        ) },                                                                      \
+                int32_t: (debug_type) { .ty = DEBUG_INT,                                                          \
+                                        __VA_OPT__(                                                               \
+                                                .int_data = { .ty = DEBUG_I32,                                    \
+                                                              .min = (int32_t) (_ARG0(__VA_ARGS__)),              \
+                                                              .max = (int32_t) (_ARG1(__VA_ARGS__)) }             \
+                                        ) },                                                                      \
+                                                                                                                  \
+                float: (debug_type) { .ty = DEBUG_FLOAT,                                                          \
+                                      __VA_OPT__(                                                                 \
+                                              .float_range = { .min = (float) (_ARG0(__VA_ARGS__)),               \
+                                                               .max = (float) (_ARG1(__VA_ARGS__)) }              \
+                                      ) },                                                                        \
+                                                                                                                  \
+                bool: (debug_type) { .ty = DEBUG_BOOL },                                                          \
+                hsv_color: (debug_type) { .ty = DEBUG_COLOR }                                                     \
+            )                                                                                                     \
+        );                                                                                                        \
     } while (0)
 
 void debug_send_remote_vars(void);
