@@ -76,7 +76,7 @@ void debug_printf(const char* format, ...);
         hsv_color: 1         \
     )
 
-#define _DEBUG_VAR_MAX_NAME 64
+#define _DEBUG_VAR_MAX_NAME 32
 
 void debug_add_remote_var_fn(volatile void* ptr, const char* name, debug_type type);
 

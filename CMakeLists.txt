@@ -32,8 +32,8 @@ add_executable(
   src/servo/impl/servo.c
   src/h_bridge/impl/h_bridge.c
   src/net/impl/net.c
-  src/net/impl/debug.c
-  src/net/impl/mapman.c
+  src/net/impl/net_debug.c
+  src/net/impl/net_mapman.c
   src/mapman/impl/mapman.c
   src/pid/impl/pid.c
   src/debug/impl/debug.c

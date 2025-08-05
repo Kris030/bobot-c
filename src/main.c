@@ -144,6 +144,7 @@ void do_course(void) {
     }
 }
 
+#include <lwip/stats.h>
 int main() {
     stdio_init_all();
     // bobot_init();
@@ -173,9 +174,13 @@ int main() {
     volatile float Ki = -1;
     debug_add_remote_var(Ki, 0, 100);
 
-    volatile bool b = false;
-    debug_add_remote_var(b);
+    volatile bool net_log = true;
+    debug_add_remote_var(net_log);
 
+    volatile uint32_t sleep = 1000;
+    debug_add_remote_var(sleep, 1, 10 * 1000);
+
+    // TODO: irq disable on read...?
     volatile hsv_color col = (hsv_color) { .h = 123, .s = 0.8, .v = 0.9 };
     debug_add_remote_var(col);
 
@@ -183,13 +188,28 @@ int main() {
 
     for (uint32_t i = 0;; i++) {
         // bobot_motor(left, right);
-        debug_printf(
-            "%d b: %d left: %03d right: %03d "
-            "Ki: %02.2f h: %03.2f s: %.2f v: %.2f"
-            "\n", //
-            i, b ? 1 : 0, left, right, Ki, col.h, col.s, col.v
-        );
-        sleep_ms(1000);
+
+        bobot_led(i % 2);
+
+//        MEM_STATS_DISPLAY();
+
+        if (net_log) {
+            debug_printf(
+                "%d left: %03d right: %03d "
+                "Ki: %02.2f h: %03.2f s: %.2f v: %.2f "
+                "\n", //
+                (int) i, (int) left, (int) right, (int) Ki, col.h, col.s, col.v
+            );
+        } else {
+            printf(
+                "%d left: %03d right: %03d "
+                "Ki: %02.2f h: %03.2f s: %.2f v: %.2f "
+                "\n", //
+                (int) i, (int) left, (int) right, Ki, col.h, col.s, col.v
+            );
+        }
+
+        sleep_ms(sleep);
     }
 }
 

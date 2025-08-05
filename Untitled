@@ -1,0 +1,138 @@
+static struct tcp_pcb* client_pcb = NULL;
+
+static volatile u8_t tx_buf[4 * 1024];
+static volatile u16_t tx_head = 0;
+static volatile u16_t tx_tail = 0;
+static volatile u16_t tx_send = 0;
+
+err_t flush_tx_buf(void) {
+    while (tx_send != tx_head) {
+        if (tcp_sndbuf(client_pcb) <= 0 || tcp_sndqueuelen(client_pcb) >= TCP_SND_QUEUELEN)
+            break;
+
+        u16_t cnt;
+        if (tx_head > tx_send)
+            cnt = tx_head - tx_send;
+        else
+            cnt = sizeof(tx_buf) - tx_send;
+
+        cnt = LWIP_MIN(tcp_sndbuf(client_pcb), cnt);
+
+        err_t err = tcp_write(
+            client_pcb,
+            tx_buf + tx_send, cnt,
+            0
+        );
+
+        if (err != ERR_OK)
+            return err;
+
+        tx_send += cnt;
+        if (tx_send == sizeof(tx_buf))
+            tx_send = 0;
+
+        printf("tx send: %d, \n", (int) tx_send);
+
+        err = tcp_output(client_pcb);
+
+        if (err != ERR_OK)
+            return err;
+    }
+
+    return ERR_OK;
+}
+
+err_t sent_cb(void* arg, struct tcp_pcb* tpcb, u16_t len) {
+    tx_tail = (tx_tail + len) % sizeof(tx_buf);
+    printf("tx tail: %d\n", (int) tx_tail);
+
+    return flush_tx_buf();
+}
+
+static err_t poll_cb(void* arg, struct tcp_pcb* tpcb) {
+    return flush_tx_buf();
+}
+
+static err_t connected_cb(void* arg, struct tcp_pcb* tpcb, err_t err) {
+    tcp_arg(client_pcb, NULL);
+    tcp_err(client_pcb, _net_err_cb);
+    tcp_sent(client_pcb, sent_cb);
+    tcp_poll(client_pcb, poll_cb, 1);
+
+    flush_tx_buf();
+
+    // shouldn't happen according to docs...
+    if (err != ERR_OK) {
+        printf("Connection failed with error: %d\n", err);
+        return err;
+    }
+
+    puts("Connected to server");
+    return ERR_OK;
+}
+
+bool connect_server(void) {
+    ip_addr_t server_ip;
+    ip4addr_aton(CONF_SERVER_IP, &server_ip);
+
+    client_pcb = tcp_new_ip_type(IP_GET_TYPE(server_ip));
+    if (!client_pcb) {
+        puts("[ERROR] Failed to create server PCB");
+        return false;
+    }
+
+    tcp_nagle_disable(client_pcb);
+
+    return tcp_connect(client_pcb, &server_ip, CONF_SERVER_PORT, connected_cb) == ERR_OK;
+}
+
+// copies the data into the tx buffer
+void write(const void* buf, size_t size) {
+    printf("write(%d)\n", (int) size);
+
+    if (size == 0)
+        return;
+
+    DISABLE_IRQ {
+        u16_t head = tx_head;
+        u16_t tail = tx_tail;
+
+        while (size > 0) {
+            // |----ht----|  or |t--------h|
+            bool full = false;
+            if (head < tail)
+                full = head == tail - 1;
+            else
+                full = head == 0 && tail == sizeof(tx_buf) - 1;
+
+            if (full) {
+                puts("[ERROR] can't write to server, send buffer is full...");
+                // we still need to reenable interrupts
+                break;
+            }
+
+            u16_t cnt;
+            if (head > tail)
+                // |--t----h:::|
+                cnt = sizeof(tx_buf) - head;
+            else // |---h:::t--|
+                cnt = tail - head - 1;
+
+            cnt = LWIP_MIN(cnt, size);
+
+            MEMCPY(tx_buf + head, buf, cnt);
+
+            // we wrap around the buffer
+            if (head == sizeof(tx_buf))
+                head = cnt - 1;
+            else
+                head += cnt;
+            printf("tx head: %d\n", (int) tx_head);
+
+            size -= cnt;
+            buf += cnt;
+        }
+
+        tx_head = head;
+    }
+}
